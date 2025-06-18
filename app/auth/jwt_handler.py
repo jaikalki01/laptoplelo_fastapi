@@ -77,11 +77,11 @@ def verify_reset_token(token: str):
     except PyJWTError:
         return None
 
-async def verify_recaptcha(token: str) -> bool:
-    url = "https://www.google.com/recaptcha/api/siteverify"
-    payload = {"secret": RECAPTCHA_SECRET, "response": token}
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=payload)
-        result = response.json()
-        return result.get("success", False)
+# async def verify_recaptcha(token: str) -> bool:
+#     url = "https://www.google.com/recaptcha/api/siteverify"
+#     payload = {"secret": RECAPTCHA_SECRET, "response": token}
+# 
+#     async with httpx.AsyncClient() as client:
+#         response = await client.post(url, data=payload)
+#         result = response.json()
+#         return result.get("success", False)
