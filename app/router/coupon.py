@@ -17,7 +17,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/", response_model=CouponOut)
+@router.post("/coupon", response_model=CouponOut)
 def create_coupon(coupon: CouponCreate, db: Session = Depends(get_db), token: str = Depends(verify_admin_token)):
     return crud_coupon.create_coupon(db, coupon)
 

@@ -25,3 +25,7 @@ class User(UserBase):
     addresses: List[Address]  # This is now just referring to the Address model
     class Config:
         from_attributes = True
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
