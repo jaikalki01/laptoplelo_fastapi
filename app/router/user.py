@@ -11,6 +11,8 @@ from app.scheme.user import Token
 from fastapi.security import OAuth2PasswordRequestForm
 from app.auth.jwt_handler import create_access_token
 from app.auth.jwt_handler import verify_token,verify_admin_token
+from app.auth.jwt_handler import verify_recaptcha
+from app.scheme.user import ChangePasswordRequest
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -94,3 +96,24 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return user_crud.get_user_by_id(db, user_id)
 
 
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    email = token_data.get("sub")
+    user = db.query(UserModel).filter(UserModel.email == email).first()
+
+    if not user or not bcrypt.verify(payload.current_password, user.password):
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is incorrect"
+        )
+
+    # Hash new password
+    hashed_new_password = bcrypt.hash(payload.new_password)
+    user.password = hashed_new_password
+    db.commit()
+
+    return {"message": "Password changed successfully"}
