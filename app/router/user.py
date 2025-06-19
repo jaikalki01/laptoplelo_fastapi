@@ -14,7 +14,6 @@ from app.auth.jwt_handler import verify_token,verify_admin_token
 from app.auth.jwt_handler import verify_recaptcha
 from app.scheme.user import ChangePasswordRequest
 
-
 router = APIRouter(prefix="/users", tags=["Users"])
 
 def get_db():
@@ -25,26 +24,13 @@ def get_db():
         db.close()
 
 @router.post("/", response_model=User)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(UserModel).filter(UserModel.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
+    is_valid_captcha = await verify_recaptcha(user_data.recaptcha_token)
 
-    hashed_password = bcrypt.hash(user.password)
-    db_user = UserModel(
-        name=user.name,
-        email=user.email,
-        role=user.role,
-        kyc_verified=user.kyc_verified,
-        password=hashed_password,
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    if not is_valid_captcha:
+        raise HTTPException(status_code=400, detail="Invalid CAPTCHA")
 
-    return db_user
-
-
+    return user_crud.create_user(db, user_data)
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -117,3 +103,4 @@ def change_password(
     db.commit()
 
     return {"message": "Password changed successfully"}
+
