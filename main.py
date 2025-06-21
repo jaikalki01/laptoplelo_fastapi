@@ -2,7 +2,8 @@ from sys import prefix
 
 from fastapi import FastAPI ,HTTPException
 from app.database import Base, engine  # Assuming database.py is inside app/
-from app.router import product, user, address, coupon, dashboard, auth, contact, cart, wishlist  # Assuming product.py is inside app/router/
+from app.router import product, user, address, coupon, dashboard, auth, contact, cart, wishlist, \
+    pcbuild  # Assuming product.py is inside app/router/
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from fastapi.responses import FileResponse
@@ -19,7 +20,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -35,7 +36,7 @@ app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(contact.router ,tags=["Contact"])
 app.include_router(cart.router)
 app.include_router(wishlist.router, prefix="/wishlist", tags=["Wishlist"])
-
+app.include_router(pcbuild.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":

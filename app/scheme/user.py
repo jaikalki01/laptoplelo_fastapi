@@ -1,5 +1,6 @@
 # scheme/user.py
 from pydantic import BaseModel
+
 from typing import List
 from app.scheme.address import Address  # Import Address from the new address scheme
 
