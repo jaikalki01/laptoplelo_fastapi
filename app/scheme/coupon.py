@@ -21,3 +21,7 @@ class CouponOut(CouponBase):
 
     class Config:
         from_attributes = True
+
+
+class CouponUpdate:
+    pass
