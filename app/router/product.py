@@ -3,11 +3,14 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.scheme.product import ProductCreate, ProductOut, ProductUpdate
 from app.crud import product as crud
-from app.auth.jwt_handler import verify_admin_token
-
 import os
+from datetime import datetime
+from fastapi.responses import JSONResponse
+from app.auth.jwt_handler import verify_admin_token  # adjust import as needed
+
 import uuid
 import aiofiles
+from app.models.cart import Cart  # or wherever your Cart model is
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -21,12 +24,10 @@ def get_db():
 UPLOAD_DIR = "static/uploaded_images"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# ✅ Get All Products
 @router.get("/", response_model=list[ProductOut])
 def read_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud.get_products(db, skip, limit)
 
-# ✅ Get Single Product by ID
 @router.get("/{product_id}", response_model=ProductOut)
 def read_product(product_id: str, db: Session = Depends(get_db)):
     product = crud.get_product(db, product_id)
@@ -34,7 +35,6 @@ def read_product(product_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-# ✅ Create Product with 4 Images
 @router.post("/", response_model=ProductOut)
 async def create_product(
     name: str = Form(...),
@@ -50,13 +50,11 @@ async def create_product(
     graphics: str = Form(...),
     available: bool = Form(...),
     featured: bool = Form(...),
-    images: list[UploadFile] = File(...),
+    images: list[UploadFile] = File(...),  # Accept 4 images
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_admin_token)
+user: dict = Depends(verify_admin_token)
 ):
-    if len(images) != 4:
-        raise HTTPException(status_code=400, detail="Exactly 4 images required")
-
+    # Step 1: Save images temporarily
     temp_file_paths = []
     for img in images:
         ext = os.path.splitext(img.filename)[1]
@@ -67,7 +65,7 @@ async def create_product(
             await f.write(content)
         temp_file_paths.append((temp_filename, ext))
 
-    # Create product with placeholder image
+    # Step 2: Create product with first image temporarily
     product_data = {
         "name": name,
         "description": description,
@@ -75,7 +73,7 @@ async def create_product(
         "rental_price": rental_price,
         "type": type,
         "brand": brand,
-        "image": temp_file_paths[0][0],
+        "image": temp_file_paths[0][0],  # Temporarily set first image
         "available": available,
         "featured": featured,
         "specs": {
@@ -90,47 +88,56 @@ async def create_product(
     product_schema = ProductCreate(**product_data)
     product = crud.create_product(db, product_schema)
 
-    # Rename and update image names with product ID
+    # Step 3: Rename image files with product ID
     renamed_images = []
     for idx, (temp_name, ext) in enumerate(temp_file_paths, start=1):
-        new_filename = f"product_{product.id}_img_{idx}{ext}"
+        new_filename = f"product_image_{idx}_{product.id}{ext}"
         os.rename(
             os.path.join(UPLOAD_DIR, temp_name),
             os.path.join(UPLOAD_DIR, new_filename)
         )
         renamed_images.append(new_filename)
 
-    # Update product with final image name
+    # Step 4: Update product with renamed first image (you can update all if needed)
     updated = ProductUpdate(image=renamed_images[0])
     updated_product = crud.update_product(db, product.id, updated)
 
-    # Optional: Save all 4 image filenames (if needed)
-    # crud.save_product_images(db, product.id, renamed_images)
+    # Optional: If storing all images, you could add them in a separate table or as a JSON field
+    # Example: crud.save_product_images(db, product.id, renamed_images)
 
     return updated_product
 
-# ✅ Update Product
 @router.put("/{product_id}", response_model=ProductOut)
 def update_product(
     product_id: str,
     updated: ProductUpdate,
     db: Session = Depends(get_db),
-    user: dict = Depends(verify_admin_token)
+    user: dict = Depends(verify_admin_token)  # 🔒 Lock system here
 ):
     updated_data = updated.dict(exclude_unset=True)
     product = crud.update_product(db, product_id, updated_data)
+
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+
     return product
 
-# ✅ Delete Product
+
 @router.delete("/{product_id}", response_model=ProductOut)
 def delete_product(
     product_id: str,
     db: Session = Depends(get_db),
     user: dict = Depends(verify_admin_token)
 ):
+    # 🛑 Step 1: Check and delete related cart entries
+    cart_items = db.query(Cart).filter(Cart.product_id == product_id).all()
+    for item in cart_items:
+        db.delete(item)
+    db.commit()
+
+    # ✅ Step 2: Now delete the product safely
     product = crud.delete_product(db, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+
     return product
