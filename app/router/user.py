@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.scheme.user import UserCreate, User
+from app.scheme.user import UserCreate, User, UserBase
 from app.crud import user as user_crud
 from pydantic import BaseModel
 from app.models import User as UserModel
@@ -23,14 +23,15 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/", response_model=User)
-async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    is_valid_captcha = await verify_recaptcha(user_data.recaptcha_token)
-
-    if not is_valid_captcha:
-        raise HTTPException(status_code=400, detail="Invalid CAPTCHA")
-
-    return user_crud.create_user(db, user_data)
+@router.post("/signup")
+def signup(user: UserBase, db: Session = Depends(get_db)):
+    existing_user = db.query(UserModel).filter(UserModel.email == user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email is already registered"
+        )
+    return user_crud.create_user(db, user)
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
