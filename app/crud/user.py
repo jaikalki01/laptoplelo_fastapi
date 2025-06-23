@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from app.models.user import User  # Ensure you import the correct User model
-from app.scheme.user import UserCreate
+from app.models.user import User
 from passlib.hash import bcrypt
+from app.models.user import User
+from app.scheme.user import UserCreate
 
 
 def create_user(db: Session, user_data: UserCreate):

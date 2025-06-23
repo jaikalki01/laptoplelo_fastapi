@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     email: str
     role: str
     kyc_verified: bool
-
+    password: str
 class UserCreate(UserBase):
     password: str
 

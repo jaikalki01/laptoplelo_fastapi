@@ -4,6 +4,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from passlib.hash import bcrypt
 
 from app.database import SessionLocal
+
+from app.scheme.user import UserCreate, User, UserBase
+from app.crud import user as user_crud
+from pydantic import BaseModel
+
+
 from app.models import User as UserModel
 from app.scheme.user import UserCreate, User, LoginForm, Token, ChangePasswordRequest
 from app.crud import user as user_crud
@@ -19,6 +25,17 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@router.post("/signup")
+def signup(user: UserBase, db: Session = Depends(get_db)):
+    existing_user = db.query(UserModel).filter(UserModel.email == user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email is already registered"
+        )
+    return user_crud.create_user(db, user)
 
 
 # --- Register ---
@@ -40,6 +57,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 
 # --- Login ---
