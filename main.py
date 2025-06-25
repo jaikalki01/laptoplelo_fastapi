@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.staticfiles import StaticFiles
 
-
+from app.router import rental
 
 # Create tables if not exist
 Base.metadata.create_all(bind=engine)
@@ -30,6 +30,7 @@ app.add_middleware(
 app.include_router(product.router)
 app.include_router(user.router)
 app.include_router(address.router)
+app.include_router(rental.router)
 app.include_router(coupon.router)
 app.include_router(dashboard.router)
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
