@@ -26,7 +26,7 @@ def add_to_cart(
 ):
     return cart_crud.create_cart_item(db, item, user_id=user_id)
 
-@router.post("/remove")
+@router.post("/cart/remove", response_model=None)
 def remove_cart_item(
     payload: CartRemoveSchema,
     user_id: int = Depends(verify_user_token),
@@ -63,3 +63,4 @@ def get_cart_count(
         Cart.user_id == user_id
     ).scalar() or 0
     return {"total_cart_items": int(total_quantity)}
+

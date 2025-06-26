@@ -243,28 +243,34 @@ async def update_product(
     return crud.update_product(db, product_id, update_data)
 
 
-@router.delete("/{product_id}", response_model=ProductOut)
+@router.delete("/products/{product_id}", response_model=ProductOut)
 def delete_product(
-        product_id: str,
-        db: Session = Depends(get_db),
-        user: dict = Depends(verify_admin_token)
+    product_id: str,
+    db: Session = Depends(get_db),
+    user: dict = Depends(verify_admin_token)
 ):
-    # Delete related cart entries
-    cart_items = db.query(Cart).filter(Cart.product_id == product_id).all()
-    for item in cart_items:
-        db.delete(item)
-    db.commit()
-
-    # Delete the product
-    product = crud.delete_product(db, product_id)
+    # 1. Get product from DB
+    product = crud.get_product(db, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Delete associated images
-    for img in product.images:
-        try:
-            os.remove(os.path.join(UPLOAD_DIR, img))
-        except OSError:
-            pass
+    # 2. Delete product images
+    if product.images:
+        for img in product.images:
+            image_path = os.path.join(UPLOAD_DIR, img)
+            if os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception as e:
+                    print(f"Failed to delete image: {image_path}. Error: {e}")
+
+    # 3. Delete cart entries for this product
+    cart_items = db.query(Cart).filter(Cart.product_id == product_id).all()
+    for item in cart_items:
+        db.delete(item)
+
+    # 4. Delete product from DB
+    db.delete(product)
+    db.commit()
 
     return product

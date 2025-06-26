@@ -8,6 +8,7 @@ def get_products(db: Session, skip: int = 0, limit: int = 100):
 def get_product(db: Session, product_id: str):
     return db.query(Product).filter(Product.id == product_id).first()
 
+
 def create_product(db: Session, product: ProductCreate):
     db_product = Product(**product.dict())
     db.add(db_product)
