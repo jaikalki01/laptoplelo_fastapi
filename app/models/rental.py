@@ -7,7 +7,7 @@ from app.database import Base
 class Rental(Base):
     __tablename__ = "rentals"
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(String, ForeignKey("users.id"))
     product_id = Column(String, ForeignKey("products.id"))
     date = Column(DateTime, default=datetime.utcnow)
