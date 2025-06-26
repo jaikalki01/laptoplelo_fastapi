@@ -3,7 +3,7 @@ from sys import prefix
 from fastapi import FastAPI ,HTTPException
 from app.database import Base, engine  # Assuming database.py is inside app/
 from app.router import product, user, address, coupon, dashboard, auth, contact, cart, wishlist, \
-    pcbuild  # Assuming product.py is inside app/router/
+    pcbuild, transaction, analytics  # Assuming product.py is inside app/router/
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from fastapi.responses import FileResponse
@@ -38,6 +38,9 @@ app.include_router(contact.router ,tags=["Contact"])
 app.include_router(cart.router)
 app.include_router(wishlist.router, prefix="/wishlist", tags=["Wishlist"])
 app.include_router(pcbuild.router)
+app.include_router(transaction.router)
+app.include_router(analytics.router)
+app.include_router(rental.router, prefix="/rentals")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
