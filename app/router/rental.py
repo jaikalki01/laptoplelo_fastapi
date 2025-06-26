@@ -11,14 +11,13 @@ from typing import List
 router = APIRouter(prefix="/rentals", tags=["Rentals"])
 
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import Rental
 
 @router.get("/rentals", response_model=list[RentalOut])
 def get_rentals(db: Session = Depends(get_db)):
-    rentals = db.query(Rental).all()
+    rentals = db.query(Rental).options(
+        joinedload(Rental.product),
+        joinedload(Rental.user)
+    ).all()
     return rentals
 
 @router.post("/", response_model=RentalOut)

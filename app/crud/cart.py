@@ -108,3 +108,6 @@ def get_cart_items_by_user(db: Session, user_id: int) -> List[Cart]:
         List of cart items
     """
     return db.query(Cart).filter(Cart.user_id == user_id).all()
+def clear_cart(db: Session, user_id: int):
+    db.query(Cart).filter(Cart.user_id == user_id).delete()
+    db.commit()

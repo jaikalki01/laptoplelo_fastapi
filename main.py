@@ -40,7 +40,7 @@ app.include_router(wishlist.router, prefix="/wishlist", tags=["Wishlist"])
 app.include_router(pcbuild.router)
 app.include_router(transaction.router)
 app.include_router(analytics.router)
-app.include_router(rental.router, prefix="/rentals")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":

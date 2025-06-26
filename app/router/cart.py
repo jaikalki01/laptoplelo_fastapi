@@ -63,3 +63,17 @@ def get_cart_count(
         Cart.user_id == user_id
     ).scalar() or 0
     return {"total_cart_items": int(total_quantity)}
+
+@router.delete("/clear")
+def clear_cart(
+    user_id: int = Depends(verify_user_token),
+    db: Session = Depends(get_db)
+) -> Dict[str, str]:
+    try:
+        cart_crud.clear_cart(db, user_id)
+        return {"message": "Cart cleared successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to clear cart: {str(e)}"
+        )
