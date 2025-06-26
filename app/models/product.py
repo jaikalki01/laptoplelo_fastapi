@@ -18,3 +18,4 @@ class Product(Base):
     featured = Column(Boolean, default=False)
 
     wishlists = relationship("Wishlist", back_populates="product")
+    rentals = relationship("Rental", back_populates="product", cascade="all, delete-orphan")
