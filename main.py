@@ -25,6 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Mount assets folder at /static/dist/assets
+app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
 
 # Include the router
 app.include_router(product.router)
@@ -41,8 +45,22 @@ app.include_router(pcbuild.router)
 app.include_router(transaction.router)
 app.include_router(analytics.router)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# Serve index.html for root
+@app.get("/")
+async def serve_react():
+    return FileResponse("static/dist/index.html")
+
+
+# Catch-all route for React Router
+@app.get("/{full_path:path}")
+async def serve_react_spa(full_path: str):
+    file_path = os.path.join('static', 'dist', full_path)
+    if os.path.exists(file_path):
+        return FileResponse
+    return FileResponse("static/dist/index.html")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

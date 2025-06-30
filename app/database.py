@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 # MySQL connection URL
 SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:office1234@localhost/laptoplelo_schemas"
+#SQLALCHEMY_DATABASE_URL = "mysql+pymysql://laptoplelo:office1234@localhost/laptoplelo_schemas"
 
 # Create the engine without the check_same_thread argument
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

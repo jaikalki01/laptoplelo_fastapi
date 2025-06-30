@@ -1,17 +1,15 @@
-# scheme/user.py
+# app/scheme/user.py
+
 from pydantic import BaseModel
-
 from typing import List
-from app.scheme.address import Address  # Import Address from the new address scheme
+from app.scheme.address import Address  # Ensure this exists
 
-class UserBase(BaseModel):
+class UserCreate(BaseModel):
     name: str
     email: str
+    password: str
     role: str
     kyc_verified: bool
-    password: str
-class UserCreate(UserBase):
-    password: str
 
 class LoginForm(BaseModel):
     email: str
@@ -21,9 +19,14 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class User(UserBase):
+class User(BaseModel):
     id: int
-    addresses: List[Address]  # This is now just referring to the Address model
+    name: str
+    email: str
+    role: str
+    kyc_verified: bool
+    addresses: List[Address]
+
     class Config:
         from_attributes = True
 
