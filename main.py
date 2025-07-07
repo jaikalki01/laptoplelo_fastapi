@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.staticfiles import StaticFiles
 
 from app.router import rental
+from app.router.product import settings
 
 # Create tables if not exist
 Base.metadata.create_all(bind=engine)
@@ -52,7 +53,8 @@ app.include_router(analytics.router)
 async def serve_react():
     return FileResponse("static/dist/index.html")
 
-
+os.makedirs(settings.STATIC_DIR, exist_ok=True)
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 # Catch-all route for React Router
 @app.get("/{full_path:path}")
 async def serve_react_spa(full_path: str):
