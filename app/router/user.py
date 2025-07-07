@@ -11,7 +11,6 @@ from app.crud import user as user_crud
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-
 # --- Dependency ---
 def get_db():
     db = SessionLocal()
@@ -20,8 +19,7 @@ def get_db():
     finally:
         db.close()
 
-
-# --- Signup Route ---
+# --- Signup Route (Open for all) ---
 @router.post("/signup", response_model=User)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(UserModel).filter(UserModel.email == user.email).first()
@@ -41,8 +39,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
-
-# --- Login Route ---
+# --- Login Route (Open for all) ---
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.email == form_data.username).first()
@@ -52,8 +49,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     token = create_access_token(data={"user_id": user.id, "sub": user.email, "role": user.role})
     return {"access_token": token, "token_type": "bearer"}
 
-
-# --- Authenticated User ---
+# --- Authenticated User (User Profile) ---
 @router.get("/auth", response_model=User)
 def get_current_user(payload: dict = Depends(verify_token), db: Session = Depends(get_db)):
     email = payload.get("sub")
@@ -65,26 +61,7 @@ def get_current_user(payload: dict = Depends(verify_token), db: Session = Depend
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-
-# --- List All Users (Admin Only) ---
-@router.get("/", response_model=list[User])
-def list_users(
-    db: Session = Depends(get_db),
-    token: dict = Depends(verify_admin_token),
-    search_term: str = "",
-    role: str = "all",
-    kyc_status: str = "all"
-):
-    return user_crud.get_users(db, search_term, role, kyc_status)
-
-
-# --- Get User By ID ---
-@router.get("/{user_id}", response_model=User)
-def get_user(user_id: int, db: Session = Depends(get_db)):
-    return user_crud.get_user_by_id(db, user_id)
-
-
-# --- Change Password ---
+# --- Change Password (Any logged-in user) ---
 @router.post("/change-password")
 def change_password(
     payload: ChangePasswordRequest,
@@ -109,3 +86,38 @@ def change_password(
     db.commit()
 
     return {"message": "Password changed successfully"}
+
+# --- List All Users (Admin only) ---
+@router.get("/", response_model=list[User])
+def list_users(
+    db: Session = Depends(get_db),
+    token: dict = Depends(verify_admin_token),  # 🔒 Only admin can access
+    search_term: str = "",
+    role: str = "all",
+    kyc_status: str = "all"
+):
+    return user_crud.get_users(db, search_term, role, kyc_status)
+
+# --- Get User By ID (Admin only) ---
+@router.get("/{user_id}", response_model=User)
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    token: dict = Depends(verify_admin_token)  # 🔒 Only admin can access
+):
+    return user_crud.get_user_by_id(db, user_id)
+
+# --- Example: Delete User (Admin only) ---
+@router.delete("/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    token: dict = Depends(verify_admin_token)  # 🔒 Only admin can delete
+):
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted successfully"}

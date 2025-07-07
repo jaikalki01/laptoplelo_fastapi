@@ -49,21 +49,25 @@ def verify_user_token(token: str = Depends(oauth2_scheme)):
             detail="Invalid token"
         )
 
+
 def verify_admin_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        role = payload.get("role")
-        if role != "admin":
+        email = payload.get("sub")
+
+        if email != "mumbaipcmart@gmail.com":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have admin privileges"
+                detail="You do not have admin access"
             )
+
         return payload
     except PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
+
 
 def create_reset_token(email: str):
     expire = datetime.utcnow() + timedelta(hours=1)
