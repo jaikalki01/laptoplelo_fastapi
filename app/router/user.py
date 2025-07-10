@@ -46,8 +46,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user or not bcrypt.verify(form_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_access_token(data={"user_id": user.id, "sub": user.email, "role": user.role})
+    # ✅ Include all fields your frontend needs
+    token = create_access_token(data={
+        "user_id": user.id,
+        "sub": user.email,
+        "role": user.role,
+        "name": user.name,
+        "email": user.email,
+        "kyc_verified": user.kyc_verified
+    })
+
     return {"access_token": token, "token_type": "bearer"}
+
 
 # --- Authenticated User (User Profile) ---
 @router.get("/auth", response_model=User)
