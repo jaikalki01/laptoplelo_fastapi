@@ -1,3 +1,6 @@
+
+from ..auth.jwt_handler import verify_token, verify_admin_token
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -5,10 +8,10 @@ import os, uuid, aiofiles
 from ..database import get_db
 from ..models import Product
 from ..scheme.product import ProductOut
-
+from app.models import Product as ProductModel, Cart as CartModel
 
 class Settings:
-    BASE_URL: str = os.getenv("BASE_URL", "mumbaipcmart.com")
+    BASE_URL: str = os.getenv("BASE_URL", "")
     STATIC_DIR: str = os.getenv("STATIC_DIR", "static")
     UPLOAD_DIR: str = os.path.join(STATIC_DIR, "uploaded_images")
 
@@ -23,16 +26,16 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def save_image_urls(product: Product) -> Product:
-    """Convert image paths to full URLs"""
     if product.image:
-        product.image = f"{settings.BASE_URL}/static/uploaded_images/{os.path.basename(product.image)}"
+        product.image = f"/static/uploaded_images/{os.path.basename(product.image)}"
 
     if product.images:
         product.images = [
-            f"{settings.BASE_URL}/static/uploaded_images/{os.path.basename(img)}"
+            f"/static/uploaded_images/{os.path.basename(img)}"
             for img in product.images
         ]
     return product
+
 
 
 @router.post("/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
@@ -113,9 +116,8 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Not found")
-
-    print("Fetched product images:", product.images)
     return save_image_urls(product)
+
 
 
 
@@ -211,21 +213,16 @@ async def update_product(
     return save_image_urls(product)
 
 
-@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
+    # Step 1: Remove product from all carts
+    db.query(CartModel).filter(CartModel.product_id == product_id).delete()
 
-    # Delete images from disk
-    for img in product.images or []:
-        try:
-            os.remove(os.path.join(UPLOAD_DIR, img))
-        except FileNotFoundError:
-            pass
+    # Step 2: Find and delete the product
+    product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
 
     db.delete(product)
     db.commit()
+    return {"message": "Product deleted successfully"}
